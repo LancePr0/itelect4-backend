@@ -11,13 +11,14 @@ const complaintSchema = new Schema<ComplaintDoc>({
     required: true,
   },
 
-  // A plain number in the Session 1 interface, so it stays a Number here
-  // rather than a ref -- Tricycle is read-only reference data, the same
-  // way Course is in the class demo, and gets no schema of its own today.
+  // A plain Number in GT4 Part 1, back when Tricycle had no schema of
+  // its own to point at. Now it does, so this is an ObjectId ref like
+  // filedBy above -- the same move Session 9 made for studentId once
+  // Submission needed a real User to belong to.
   tricycleId: {
-    type: Number,
+    type: Schema.Types.ObjectId,
+    ref: "Tricycle",
     required: [true, "tricycleId is required"],
-    min: [1, "tricycleId must be a positive number"],
   },
 
   complainantName: {
