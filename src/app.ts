@@ -5,7 +5,9 @@ import express, {
 } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import { connectDB } from "./config/db";
 import { authRouter } from "./routes/auth";
+import { tricycleRouter } from "./routes/tricycles";
 import { complaintRouter } from "./routes/complaints";
 
 // This file builds the app and stops. It never opens a port and never
@@ -13,21 +15,42 @@ import { complaintRouter } from "./routes/complaints";
 // a test -- can have one without starting a server.
 export const app = express();
 
-// Lets a browser on another port -- the Vite app on 5173 -- call this
-// one. Without it the browser blocks the response before your code
-// ever sees it. Postman is not a browser, so it never needs this.
-app.use(cors());
+// GT4 Part 1: cors() with no options allowed every website on the
+// internet to call this API. Right for a laptop; deployed, it means any
+// page anywhere can send a request carrying a stolen user's token.
+// Now only the origins this app is actually served from.
+//
+// One environment variable, comma-separated, so the list is different
+// on a laptop and on Vercel without the code knowing which it is.
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin !== "");
+
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 
 // Reads a JSON request body and puts it on req.body. Without this
 // line req.body is undefined, and `const { email } = req.body`
 // throws.
 app.use(express.json());
 
+// The line that makes this work on Vercel. On a laptop, server.ts
+// connects to MongoDB and only then starts listening, so a request
+// cannot arrive before the connection exists. Deployed there is no
+// server.ts step -- the app IS the function, and a request is the first
+// thing that happens. So the waiting moves here, in front of every
+// route.
+app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+  await connectDB();
+  next();
+});
+
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true, db: mongoose.connection.readyState === 1 });
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/tricycles", tricycleRouter);
 app.use("/api/complaints", complaintRouter);
 
 // Nothing above matched, so the URL does not exist. Without this, an
@@ -64,3 +87,9 @@ app.use(
     res.status(500).json({ message: "Something went wrong" });
   },
 );
+
+// Vercel looks for an Express app in six places, and src/app.ts is one
+// of them. What it needs there is a default export -- that is the whole
+// of the deployment configuration for this project, and it is why there
+// is no vercel.json in this repo.
+export default app;

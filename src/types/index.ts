@@ -62,16 +62,36 @@ export type UserDoc = Omit<User, "id"> & {
   password: string;
 };
 
-// filedBy is an ObjectId, not a number. An ObjectId is an object that
-// PRINTS as 24 hex characters -- it only becomes a real string when the
-// document is turned into JSON.
-export type ComplaintDoc = Omit<Complaint, "id" | "filedBy"> & {
+// Tricycle never had an id of its own at this layer either -- Mongo
+// assigns one, the same as Course does in the class demo.
+export type TricycleDoc = Omit<Tricycle, "id">;
+
+// filedBy and tricycleId are both ObjectIds, not numbers. An ObjectId is
+// an object that PRINTS as 24 hex characters -- it only becomes a real
+// string when the document is turned into JSON.
+//
+// tricycleId started as a plain Number in GT4 Part 1, back when Tricycle
+// had no schema of its own and nothing real to point at. Now that
+// Tricycle is a real collection, a complaint has to reference an actual
+// document in it -- the same move filedBy already made for User.
+export type ComplaintDoc = Omit<
+  Complaint,
+  "id" | "filedBy" | "tricycleId"
+> & {
   filedBy: Types.ObjectId;
+  tricycleId: Types.ObjectId;
 };
 
 // The body a client sends to create one. No id, and no filedBy -- the
 // server reads that off the token instead of trusting the request.
-export type NewComplaintBody = Pick<
-  Complaint,
-  "tricycleId" | "complainantName" | "issueDescription"
->;
+//
+// tricycleId is typed string here, not number: the Session 1 interface
+// still says number, but what a client actually sends is the tricycle's
+// real 24-character MongoDB id. Mongoose casts the string to an
+// ObjectId when the document is created.
+export type NewComplaintBody = Omit<
+  Pick<Complaint, "tricycleId" | "complainantName" | "issueDescription">,
+  "tricycleId"
+> & {
+  tricycleId: string;
+};
