@@ -9,6 +9,7 @@ import { connectDB } from "./config/db";
 import { authRouter } from "./routes/auth";
 import { tricycleRouter } from "./routes/tricycles";
 import { complaintRouter } from "./routes/complaints";
+import { aiRouter } from "./routes/ai";
 
 // This file builds the app and stops. It never opens a port and never
 // touches the database, so anything that wants an app -- server.ts, or
@@ -52,6 +53,9 @@ app.get("/api/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/tricycles", tricycleRouter);
 app.use("/api/complaints", complaintRouter);
+
+// Private, rate limited, and the only route that talks to Gemini.
+app.use("/api/ai", aiRouter);
 
 // Nothing above matched, so the URL does not exist. Without this, an
 // unknown path returns Express's own HTML error page, which is a
