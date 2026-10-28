@@ -1,0 +1,29 @@
+name: CI
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # Installs exactly what package-lock.json lists. node_modules is
+      # in .gitignore, so it is not in the repo for checkout to copy.
+      - run: npm ci
+
+      # The same check npm run build does, without writing dist/.
+      - run: npm run typecheck
+
+      # requireAuth and the test both read JWT_SECRET, and .env is not
+      # in the repo, so the value comes from Settings > Secrets and
+      # variables > Actions instead.
+      - run: npm test
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
